@@ -1,4 +1,4 @@
-## Discovered from desk (LightBlue BLE explorer on phone):
+## Discovered from desk (LightBlue on Android, and Bluetooth LE Explorer on Windows):
 - Generic Access
   - Device Name:
     - Device Address: CE:A4:6E:95:96:A8
@@ -6,34 +6,71 @@
     - Characteristic UUID: 00002a00-0000-1000-8000-00805f9b34fb
     - Readable, writable
     - UTF-8 string "Desk 8586"
+    - Handle: 2
   - Appearance:
     - Service UUID: 00001800-0000-1000-8000-0805f9b34fb
     - Characteristic UUID: 00002a01-0000-1000-8000-00805f9b34fb
     - Value: 0x00 00
     - Readable
+    - Handle: 4
   - Peripheral Preferred Connection Parameters:
+    - See [reference link](https://googlechrome.github.io/samples/web-bluetooth/gap-characteristics.html)
     - Service UUID: 00001800-0000-1000-8000-00805f9b34fb
     - Characteristic UUID: 00002a04-0000-1000-8000-00805f9b34fb
     - Value: 0x10 00 30 00 00 00 32 00
     - Readable
+    - Handle: 6
+    - 2 bytes each (little endian):
+      - Minimum connection interval (20msec here, 1.25msec per integer step)
+      - Maximum connection interval (60msec here, 1.25msec per integer step)
+      - Slave Latency (0msec here, 1msec per integer step)
+      - Connection Supervision Timeout Multiplier (50 here)
   - Central Address Resolution:
     - Service UUID: 00001800-0000-1000-8000-00805f9b34fb
     - Characteristic UUID: 00002aa6-0000-1000-8000-00805f9b34fb
     - Value: 0x01
     - Readable
+    - Handle: 8
 
 - Generic Attribute
+  - Service UUID: 00001801-0000-1000-8000-00805f9b34fb
   - Service Changed
-    - Service UUID: 00001801-0000-1000-8000-00805f9b34fb
     - Characteristic UUID: 00002a05-0000-1000-8000-00805f9b34fb
     - Value: N/A (subscribe)
     - Subscribable (indicatable?)
+    - Handle: 11
     - Descriptors
       - Client Characteristic Configuration:
         - 00002902-0000-1000-8000-00805f9b34fb
 
-
-
-
-
-
+- 99fa0001-338a-1024-8a49-009c0215f78a
+    - Characteristic UUID: 99fa0002-338a-1024-8a49-009c0215f78a
+        - Writable
+        - Handle: 15
+    - Characteristic UUID: 99fa-0003-338a-1024-8a49-009c0215f78a
+        - Readable, Notifiable, Indicatable (?)
+        - Default: NULL
+        - Handle: 17
+- 99fa0010-338a-1024-8a49-009c0215f78a
+    - Characteristic UUID: 99fa0011-338a-1024-8a49-009c0215f78a
+        - Readable, Writable, Notifiable
+        - Default: 0x01 00
+        - Handle: 21
+- 99fa0020-338a-1024-8a49-009c0215f78a
+    - Characteristic UUID: 99fa0021-338a-1024-8a49-009c0215f78a
+        - Readable, Notifiable
+        - Default: 0x2A 16 00 00
+        - Handle: 25
+        - Meaning: position (when stationary) velocity (when moving)
+    - Characteristic UUID: 99fa0029-338a-1024-8a49-009c0215f78a
+        - Readable
+        - Default: 0x01
+        - Handle: 28
+    - Characteristic UUID: 99fa002a-338a-1024-8a49-009c0215f78a
+        - Readable
+        - Default: 0x01
+        - Handle: 30
+- 99fa0030-338a-1024-8a49-009c0215f78a
+    - Characteristic UUID: 99fa0031-338a-1024-8a49-009c0215f78a
+        - Writable (no response)
+        - Handle: 33
