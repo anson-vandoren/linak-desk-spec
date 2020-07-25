@@ -228,6 +228,51 @@ part, and into the meat of the app. But in the background, it keeps
 disconnecting, reconnecting, and asking for all parameters up to and including
 0x7F-89-00, so I'll add that one in and see what happens.
 
+The real desk gives a repsonse for 0x7F-89-00 of 0x01-07-01-88-05-59-44-E4-7B,
+so I added this into a handler.
+
+Next was 0x7F-8A-00, which the desk responds to with
+0x01-07-01-2A-16-FD-6D-E4-7B
+
+I went out on a limb and checked a few additional commands:
+
+0x7F-8B-00: 0x01-05-00-00-00-00
+0x7F-8C-00: 0x0B-00
+0x7F-8D-00: No response
+
+I added the 3 additional handlers (8A, 8B, 8C).
+
+Success!
+
+As expected, the Desk Control app asked for all 3 additional parameters, which
+were successfully given by the 3 new handlers. Following this:
+
+- Client set the hightSpeed (0021) 2902 descriptor to 2 (NOTIFY)
+- Client set the 0011 characteristic value to
+  0x7f-86-80-1-e5-c0-ca-d8-be-c4-48-e1-a0-8-3e-56-f8-d4-cf-ca
+Nothing else happened after this, but the app went into "normal" (i.e.,
+handshake complete) mode, and stayed connected to the emulated desk now.
+
+I'm not sure if anything else is supposed to happen on this handshake, so
+I plugged the really long command in (0x7F-86-80...) to the actual desk and got
+a response of 0x01-00, so I'll add this to the handler too and see if I get any
+more. Note that at this point, the app is connected to the desk, so I need to
+disconnect and try to reconnect each time to keep making progress.
+
+I did some playing around and it seems that only the first 5 bytes might matter to
+this response:
+  - If I don't write the 5th byte (E5), I get a response of 0x0B-00 (maybe an
+    error?)
+  - If I do write the 5th byte (E5), it seems I can use either 01 or 02 for the
+    4th byte to get the same response (but not sure what the meanings are)
+  - It doesn't seem to matter (response-wise) what I enter after the 5th byte,
+    or if I even write anything there.
+
+This seems to be the end of the handshaking - next step will be to start
+playing around with the app, and monitoring the commands that get sent to my
+emulator, to try to learn more about the communication protocol. Also, I may
+try to decompile the Android app APK to see if I can learn anything there.
+
 # Side notes:
 
 - I'm using a NodeMCU-ESP32s board, and I kept needing to hold down the reset
