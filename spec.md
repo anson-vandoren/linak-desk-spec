@@ -273,6 +273,108 @@ playing around with the app, and monitoring the commands that get sent to my
 emulator, to try to learn more about the communication protocol. Also, I may
 try to decompile the Android app APK to see if I can learn anything there.
 
+
+# Decoding desk capabilities
+
+Earlier, I had seen that during the handshake process, the Desk Control app
+sent my emulated desk the 0x7F-80 command on the 0011 characteristic. After
+having decompiled the source of the Android app, I found that this command maps
+to `GET_CAPABILITIES`. The response that my real desk gives to this is the
+4 byte response 0x01-02-23-01. Looking at the `Dpg.class` file, in the
+`handleChangeDPG()` method, it looks like the first byte needs to be `01`,
+second byte can be anything, and then the final two bytes are the actual
+capabilities, so in the case of my actual desk, it's `0x23-01`. The second byte
+here `0x01` seems to have something to do with 'references', although I don't
+understand that yet. The first byte, though, is more interesting. Of this byte:
+
+  - The first 3 bits tell how many memory locations the desk has (mine has 3)
+    - b011
+  - 4th bit is "AutoUp"
+  - 5th bit is "AutoDown"
+  - 6th bit is "BleAllowed"
+  - 7th bit is "HasDisplay"
+  - 8th bit is "HasLight"
+
+My desk only has the 6th bit set (for BLE allowed), which maps to the actual
+hardware I have. To test this, I'm going to try setting 4 memory positions, and
+turning on the AutoUp/AutoDown/HasDisplay/HasLight, and see if I can see some
+corresponding changes in the app.
+
+A bit string of b11111100 should give me what I'm looking for, which is
+equivalent to 0xFC, so the full response I want to send is 0x01-02-FC-01.
+
+OK, so that seemed to work. I definitely have 4 memory positions to choose from
+on the app now, as well as a new settings page that gives me the option to turn
+on AutoUp and AutoDown (after accepting the ToS, which probably says automatic
+motion can be dangerous).
+
+I don't know how to check the HasDisplay/HasLight. The handshake seems to be
+the same as it was before even with these turned on, and I don't see anything
+different in the app that would signify these were successfully changed, but
+I think it's safe to say they were based on the other two.
+
+# Handling movement commands
+
+I want my emulator to be able to "move" up and down when the app commands it
+to. I already have a way to keep track of my current position on the ESP32, so
+I just need a fake speed (I'll figure out how to get/set real speed later), and
+then monitor the commands for motion.
+
+I did some testing on my real desk with the BLE Explorer, and if I send an up/down
+command to the 0002 characteristic, the desk moves some preset amount and then
+stops. If I send the command repeatedly (i.e., send a new command before the
+preset amount of motion stops), the desk continues in a smooth motion. From the
+`LinCommand.class` file, I see that up should be 0x47-00 and down should be
+0x46-00. When the movement is complete, the app will send two stop commands
+(based on `void stop()` in Desk.class):
+
+  - One Lin `STOP_MOVEMENT` command (0xFF-00)
+  - One ReferenceInputCommand `deskStop` (0x01-80), to characteristic ONE
+
+I'm not 100% sure yet, but I think the ReferenceInputCommands are to set
+a moveTo position command, so setting stop on that characteristic here is just
+a safety measure, but doesn't really do anything since we were doing a job
+motion instead of point-to-point.
+
+Either way, I'll try to handle all these cases in my code
+
+Height is read from from ReferenceOutput.ONE, as little-endian bytes. For
+exanple:
+
+`0x99-05-00-00` is read as 0x00-00-05-99, or just 0x05-99, which is 1433dec.
+This number is divided by 100 to get centimeters
+
+I implemented a callback on the COMMAND characteristic (0002) and listened for
+the UP/DOWN/STOP commands. I'm not sure what distance the actual desk moves on
+a single down command, but I chose 1cm. The implementation is kind of hacky for
+now and probably not realistic, but this just needs to be a proof of concept,
+and it works on that.
+
+In the loop() function, I'm continuously checking if `lastHeight` differs from
+`currentHeight` (which is being updated in the callback), and if they are
+different, I'm notifying the client about the new current height, and setting
+`lastHeight` appropriately.
+
+It works well in practice, and moving up/down from the Desk Control app now
+also updates the height both on the MCU, and in the app.
+
+I could do more with this emulator, but instead I want to get going on building
+a client app to connect to my real desk, which is the ultimate goal of this
+project. To do this, I'll need:
+
+- A web server on the ESP32 to show things like:
+  - Current position
+  - Up/down controls
+  - Show saved positions (and let move to)
+  - Desk connected to
+  - Controls to help connect to a new desk
+  - Controls to connect to MQTT
+  - Controls to connect to WiFi
+- A connection to MQTT
+  - Update MQTT topics when position change
+  - Listen on MQTT topics to know when to move up and down
+
+
 # Side notes:
 
 - I'm using a NodeMCU-ESP32s board, and I kept needing to hold down the reset
