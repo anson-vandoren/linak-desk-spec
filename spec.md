@@ -116,7 +116,6 @@ Then I set these callbacks on each characteristic like:
 
 ```clang
 chr2->setCallbacks(new SnoopCallbacks());
-
 ```
 
 - Desk Control app makes a connection
